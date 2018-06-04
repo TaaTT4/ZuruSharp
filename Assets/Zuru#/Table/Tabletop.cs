@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 
@@ -29,6 +30,13 @@ namespace Zuru
 		[Tooltip("Tabletop initial height (don't change it at runtime)")]
 		float m_initialHeight;
 
+		[SerializeField]
+		[Tooltip("Tabletop stretching handle PF")]
+		GameObject m_stretchingHandlePF;
+
+
+		// Tabletop stretching handles
+		GameObject[] m_handles;
 
 		// Tabletop mesh and vertices
 		Mesh m_mesh;
@@ -40,6 +48,7 @@ namespace Zuru
 			/* Check that serialized fields have sane values */
 			Assert.IsTrue(m_initialDimension.x > 0.0f && m_initialDimension.y > 0.0f && m_initialDimension.z > 0.0f);
 			Assert.IsTrue(m_initialHeight > 0.0f);
+			Assert.IsNotNull(m_stretchingHandlePF);
 
 			/* Create tabletop mesh */
 			m_meshVertices = new Vector3[24];
@@ -123,6 +132,66 @@ namespace Zuru
 			m_mesh.RecalculateNormals();
 
 			GetComponent<MeshFilter>().mesh = m_mesh;
+
+			/* Instantiate stretching handles and place them at tabletop corners */
+			m_handles = new GameObject[4];
+
+			for (var i = 0; i < 4; ++i)
+			{
+				m_handles[i] = Instantiate(m_stretchingHandlePF, transform);
+				m_handles[i].transform.localScale = Vector3.one * m_initialDimension.y * 2.0f;
+			}
+
+			RepositionHandles();
+		}
+
+
+		// Reposition stretching handles at tabletop corners (due to mesh change)
+		void RepositionHandles()
+		{
+			for (var i = 0; i < 4; ++i)
+			{
+				var position = new Vector3();
+
+				switch ((Corner)Enum.ToObject(typeof(Corner), i))
+				{
+					case Corner.Northwest:
+					{
+						position.x = -m_mesh.bounds.extents.x;
+						position.z = m_mesh.bounds.extents.z;
+
+						break;
+					}
+
+					case Corner.Northeast:
+					{
+						position.x = m_mesh.bounds.extents.x;
+						position.z = m_mesh.bounds.extents.z;
+
+						break;
+					}
+
+					case Corner.Southeast:
+					{
+						position.x = m_mesh.bounds.extents.x;
+						position.z = -m_mesh.bounds.extents.z;
+
+						break;
+					}
+
+					case Corner.Southwest:
+					{
+						position.x = -m_mesh.bounds.extents.x;
+						position.z = -m_mesh.bounds.extents.z;
+
+						break;
+					}
+				}
+
+				position.y = m_initialHeight + m_initialDimension.y * 0.5f;
+
+				m_handles[i].transform.localPosition = position;
+			}
 		}
 	}
 }
