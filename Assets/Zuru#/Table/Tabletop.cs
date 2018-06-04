@@ -179,48 +179,11 @@ namespace Zuru
 		// Reposition stretching handles at tabletop corners (due to mesh change)
 		void RepositionHandles()
 		{
+			var y = m_initialHeight + m_initialDimension.y * 0.5f;
+
 			for (var i = 0; i < 4; ++i)
 			{
-				var position = new Vector3();
-
-				switch ((Corner)Enum.ToObject(typeof(Corner), i))
-				{
-					case Corner.Northwest:
-					{
-						position.x = -m_mesh.bounds.extents.x;
-						position.z = m_mesh.bounds.extents.z;
-
-						break;
-					}
-
-					case Corner.Northeast:
-					{
-						position.x = m_mesh.bounds.extents.x;
-						position.z = m_mesh.bounds.extents.z;
-
-						break;
-					}
-
-					case Corner.Southeast:
-					{
-						position.x = m_mesh.bounds.extents.x;
-						position.z = -m_mesh.bounds.extents.z;
-
-						break;
-					}
-
-					case Corner.Southwest:
-					{
-						position.x = -m_mesh.bounds.extents.x;
-						position.z = -m_mesh.bounds.extents.z;
-
-						break;
-					}
-				}
-
-				position.y = m_initialHeight + m_initialDimension.y * 0.5f;
-
-				m_handles[i].transform.localPosition = position;
+				m_handles[i].transform.localPosition = new Vector3(m_meshVertices[i * 6].x, y, m_meshVertices[i * 6].z);
 			}
 		}
 	}
