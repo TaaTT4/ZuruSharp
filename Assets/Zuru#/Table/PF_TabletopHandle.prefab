@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33909298268180826}
   - component: {fileID: 23468739124871916}
   - component: {fileID: 65164711098784972}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PF_TabletopHandle
   m_TagString: Untagged
   m_Icon: {fileID: 0}

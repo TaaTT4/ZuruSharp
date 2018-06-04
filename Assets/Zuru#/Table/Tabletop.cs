@@ -35,12 +35,18 @@ namespace Zuru
 		GameObject m_stretchingHandlePF;
 
 
+		// Currently active tabletop stretching handle
+		GameObject m_handleActive = null;
+
 		// Tabletop stretching handles
 		GameObject[] m_handles;
 
 		// Tabletop mesh and vertices
 		Mesh m_mesh;
 		Vector3[] m_meshVertices;
+
+		// Mouse position at previous frame
+		Vector3 m_mousePosition = Vector3.one * float.MaxValue;
 
 
 		void Awake()
@@ -143,6 +149,30 @@ namespace Zuru
 			}
 
 			RepositionHandles();
+		}
+
+
+		private void Update()
+		{
+			if (m_mousePosition != Input.mousePosition)
+			{
+				m_mousePosition = Input.mousePosition;
+
+				/* Show tabletop stretching handle when it's under mouse cursor or hide it otherwise */
+				RaycastHit hit;
+				Physics.Raycast(Camera.main.ScreenPointToRay(m_mousePosition), out hit, LayerMask.NameToLayer("TabletopHandle"));
+
+				if (hit.transform)
+				{
+					m_handleActive = hit.transform.gameObject;
+					m_handleActive.GetComponent<Renderer>().enabled = true;
+				}
+				else if (m_handleActive)
+				{
+					m_handleActive.GetComponent<Renderer>().enabled = false;
+					m_handleActive = null;
+				}
+			}
 		}
 
 
