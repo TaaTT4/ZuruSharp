@@ -162,12 +162,12 @@ namespace Zuru
 				RaycastHit hit;
 				Physics.Raycast(Camera.main.ScreenPointToRay(m_mousePosition), out hit, LayerMask.NameToLayer("TabletopHandle"));
 
-				if (hit.transform)
+				if (hit.transform && !m_handleActive)
 				{
 					m_handleActive = hit.transform.gameObject;
 					m_handleActive.GetComponent<Renderer>().enabled = true;
 				}
-				else if (m_handleActive)
+				else if (!hit.transform && m_handleActive)
 				{
 					m_handleActive.GetComponent<Renderer>().enabled = false;
 					m_handleActive = null;
