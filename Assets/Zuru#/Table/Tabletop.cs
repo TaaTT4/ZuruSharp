@@ -41,12 +41,18 @@ namespace Zuru
 		// Tabletop stretching handles
 		GameObject[] m_handles;
 
+		// Whether tabletop is in stretching state
+		bool m_isStretching = false;
+
 		// Tabletop mesh and vertices
 		Mesh m_mesh;
 		Vector3[] m_meshVertices;
 
 		// Mouse position at previous frame
 		Vector3 m_mousePosition = Vector3.one * float.MaxValue;
+
+		// Imaginary plane on which stretching happens
+		Plane plane;
 
 
 		void Awake()
@@ -149,6 +155,9 @@ namespace Zuru
 			}
 
 			RepositionHandles();
+
+			/* Place plane at tabletop barycenter and parallel to XZ */
+			plane = new Plane(Vector3.up, -(m_initialHeight + m_initialDimension.y * 0.5f));
 		}
 
 
@@ -158,19 +167,86 @@ namespace Zuru
 			{
 				m_mousePosition = Input.mousePosition;
 
-				/* Show tabletop stretching handle when it's under mouse cursor or hide it otherwise */
-				RaycastHit hit;
-				Physics.Raycast(Camera.main.ScreenPointToRay(m_mousePosition), out hit, LayerMask.NameToLayer("TabletopHandle"));
+				if (m_isStretching)
+				{
+					/* Stretch tabletop and update its components (mesh, handles, etc.) when handle is dragged with left mouse button */
+					var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+					float distance;
 
-				if (hit.transform && !m_handleActive)
-				{
-					m_handleActive = hit.transform.gameObject;
-					m_handleActive.GetComponent<Renderer>().enabled = true;
+					if (plane.Raycast(ray, out distance))
+					{
+						var index = Array.IndexOf(m_handles, m_handleActive);
+						var position = transform.InverseTransformPoint(ray.GetPoint(distance));
+
+						for (var i = 0; i < 6; ++i)
+						{
+							m_meshVertices[index * 6 + i].x = position.x;
+							m_meshVertices[index * 6 + i].z = position.z;
+						}
+
+						RepositionAdjacentCorners();
+
+						m_mesh.vertices = m_meshVertices;
+
+						m_mesh.RecalculateBounds();
+						m_mesh.RecalculateNormals();
+
+						RepositionHandles();
+					}
 				}
-				else if (!hit.transform && m_handleActive)
+				else
 				{
-					m_handleActive.GetComponent<Renderer>().enabled = false;
-					m_handleActive = null;
+					/* Show tabletop stretching handle when it's under mouse cursor or hide it otherwise */
+					RaycastHit hit;
+					Physics.Raycast(Camera.main.ScreenPointToRay(m_mousePosition), out hit, LayerMask.NameToLayer("TabletopHandle"));
+
+					if (hit.transform && !m_handleActive)
+					{
+						m_handleActive = hit.transform.gameObject;
+						m_handleActive.GetComponent<Renderer>().enabled = true;
+					}
+					else if (!hit.transform && m_handleActive)
+					{
+						m_handleActive.GetComponent<Renderer>().enabled = false;
+						m_handleActive = null;
+					}
+				}
+			}
+
+			if (m_handleActive)
+			{
+				/* Enter in stretching state when left mouse button is pressed and exit when it's released */
+				if (Input.GetMouseButtonDown(0))
+				{
+					m_isStretching = true;
+				}
+				else if (Input.GetMouseButtonUp(0))
+				{
+					m_isStretching = false;
+				}
+			}
+		}
+
+
+		// Reposition tabletop corners adjacent to currently active stretching handle (due to mesh change)
+		void RepositionAdjacentCorners()
+		{
+			var index = Array.IndexOf(m_handles, m_handleActive);
+
+			var prev = ((index - 1) % 4 + 4) % 4;
+			var next = (index + 1) % 4;
+
+			for (var i = 0; i< 6; ++i)
+			{
+				if (index % 2 == 0)
+				{
+					m_meshVertices[prev * 6 + i].x = m_meshVertices[index * 6 + i].x;
+					m_meshVertices[next * 6 + i].z = m_meshVertices[index * 6 + i].z;
+				}
+				else
+				{
+					m_meshVertices[prev * 6 + i].z = m_meshVertices[index * 6 + i].z;
+					m_meshVertices[next * 6 + i].x = m_meshVertices[index * 6 + i].x;
 				}
 			}
 		}
