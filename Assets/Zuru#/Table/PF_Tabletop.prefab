@@ -104,3 +104,6 @@ MonoBehaviour:
   m_leg:
     PF: {fileID: 1614008740322596, guid: f747a9900a3508b4eaf7f88c0479bd02, type: 2}
     distance: {x: 0.1, y: 0, z: 0.1}
+  m_chair:
+    PF: {fileID: 1580301818018098, guid: 2d009eadaaa193c4f9eed1afe53c1fc7, type: 2}
+    padding: 0.2

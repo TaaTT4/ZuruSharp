@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -34,6 +35,16 @@ namespace Zuru
 			public Vector3 distance;
 		}
 
+		[Serializable]
+		struct Chair
+		{
+			[Tooltip("PF")]
+			public GameObject PF;
+
+			[Tooltip("Min space that there has to be between chair and any other element (another chair or table leg)")]
+			public float padding;
+		}
+
 
 		[SerializeField]
 		Tabletop m_tabletop = new Tabletop();
@@ -41,6 +52,12 @@ namespace Zuru
 		[SerializeField]
 		Leg m_leg = new Leg();
 
+		[SerializeField]
+		Chair m_chair = new Chair();
+
+
+		// Chairs
+		List<GameObject> m_chairs = new List<GameObject>();
 
 		// Currently active tabletop stretching handle
 		GameObject m_handleActive = null;
@@ -85,6 +102,9 @@ namespace Zuru
 			{
 				Assert.IsTrue(m_leg.distance[i] >= 0.0f);
 			}
+
+			Assert.IsNotNull(m_chair.PF);
+			Assert.IsTrue(m_chair.padding > 0.0f);
 
 			/* Create tabletop mesh (top view)
 			 *   NW -------- NE
@@ -197,6 +217,9 @@ namespace Zuru
 
 			/* Place plane at tabletop barycenter and parallel to XZ */
 			plane = new Plane(Vector3.up, -(m_tabletop.height + m_tabletop.dimension.y * 0.5f));
+
+			/* Place chairs in position */
+			PlaceChairs();
 		}
 
 
@@ -208,7 +231,7 @@ namespace Zuru
 
 				if (m_isStretching)
 				{
-					/* Stretch tabletop and update its elements (mesh, handles and legs) when handle is dragged with left mouse button */
+					/* Stretch tabletop and update its elements (mesh, handles and legs) and chairs when handle is dragged with left mouse button */
 					var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 					float distance;
 
@@ -224,6 +247,8 @@ namespace Zuru
 
 						RepositionHandles();
 						RepositionLegs();
+
+						PlaceChairs();
 					}
 				}
 				else
@@ -258,6 +283,81 @@ namespace Zuru
 				{
 					m_isStretching = false;
 				}
+			}
+		}
+
+
+		// Instantiate and destroy chairs as needed and place them in position
+		void PlaceChairs()
+		{
+			/* Instantiate chairs if missing or destroy those in excess */
+			var spaceH = m_legs[1].transform.localPosition.x - m_legs[0].transform.localPosition.x - m_leg.PF.GetComponentInChildren<Renderer>().bounds.size.x -
+					m_chair.padding;
+
+			var spaceV = m_legs[1].transform.localPosition.z - m_legs[2].transform.localPosition.z - m_leg.PF.GetComponentInChildren<Renderer>().bounds.size.z -
+					m_chair.padding;
+
+			var chairSize = m_chair.PF.GetComponentInChildren<Renderer>().bounds.size.x + m_chair.padding;
+
+			var chairCountH = Mathf.FloorToInt(spaceH / chairSize);
+			var chairCountV = Mathf.FloorToInt(spaceV / chairSize);
+			var chairCount = (chairCountH + chairCountV) * 2;
+
+			if (m_chairs.Count < chairCount)
+			{
+				for (var i = m_chairs.Count; i < chairCount; ++i)
+				{
+					m_chairs.Add(Instantiate(m_chair.PF, transform));
+				}
+			}
+			else if (m_chairs.Count > chairCount)
+			{
+				for (var i = m_chairs.Count; i > chairCount; --i)
+				{
+					Destroy(m_chairs[i - 1]);
+				}
+
+				m_chairs.RemoveRange(chairCount, m_chairs.Count - chairCount);
+			}
+
+			/* Reposition chairs */
+			var chairOffset = 0;
+
+			var orientation = Quaternion.Euler(0.0f, 180.0f, 0.0f);
+
+			for (var i = 0; i < 4; ++i)
+			{
+				float currentSpace;
+				int currentCount;
+
+				if (i % 2 == 0)
+				{
+					currentSpace = spaceH;
+					currentCount = chairCountH;
+				}
+				else
+				{
+					currentSpace = spaceV;
+					currentCount = chairCountV;
+				}
+
+				var positionA = m_legs[i].transform.localPosition;
+				var positionB = m_legs[(i + 1) % 4].transform.localPosition;
+
+				var extents = (Vector3.Distance(positionA, positionB) / currentSpace - 1.0f) * 0.5f;
+
+				for (var j = 0; j < currentCount; ++j)
+				{
+					// Remap t taking in account legs dimension
+					var t = Mathf.InverseLerp(-extents, extents + 1.0f, (float)(j * 2 + 1) / (float)(currentCount * 2));
+
+					m_chairs[chairOffset + j].transform.localPosition = new Vector3(Mathf.Lerp(positionA.x, positionB.x, t), 0.0f, Mathf.Lerp(positionA.z, positionB.z, t));
+					m_chairs[chairOffset + j].transform.localRotation = orientation;
+				}
+
+				chairOffset += currentCount;
+
+				orientation *= Quaternion.Euler(0.0f, 90.0f, 0.0f);
 			}
 		}
 
