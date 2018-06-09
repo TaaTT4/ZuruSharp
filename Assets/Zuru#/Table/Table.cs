@@ -24,9 +24,22 @@ namespace Zuru
 			public Vector3 minDimension;
 		}
 
+		[Serializable]
+		struct Leg
+		{
+			[Tooltip("PF")]
+			public GameObject PF;
+
+			[Tooltip("Distance from corner (y is ignored)")]
+			public Vector3 distance;
+		}
+
 
 		[SerializeField]
 		Tabletop m_tabletop = new Tabletop();
+
+		[SerializeField]
+		Leg m_leg = new Leg();
 
 
 		// Currently active tabletop stretching handle
@@ -37,6 +50,9 @@ namespace Zuru
 
 		// Whether tabletop is in stretching state
 		bool m_isStretching = false;
+
+		// Legs
+		GameObject[] m_legs;
 
 		// Tabletop mesh and vertices
 		Mesh m_mesh;
@@ -61,6 +77,13 @@ namespace Zuru
 			foreach (var i in new int[] { 0, 2 })
 			{
 				Assert.IsTrue(m_tabletop.minDimension[i] > 0.0f);
+			}
+
+			Assert.IsNotNull(m_leg.PF);
+
+			foreach (var i in new int[] { 0, 2 })
+			{
+				Assert.IsTrue(m_leg.distance[i] >= 0.0f);
 			}
 
 			/* Create tabletop mesh (top view)
@@ -161,6 +184,17 @@ namespace Zuru
 
 			RepositionHandles();
 
+			/* Instantiate legs and place them in position */
+			m_legs = new GameObject[4];
+
+			for (var i = 0; i < 4; ++i)
+			{
+				m_legs[i] = Instantiate(m_leg.PF, transform);
+				m_legs[i].transform.localScale = new Vector3(1.0f, m_tabletop.height, 1.0f);
+			}
+
+			RepositionLegs();
+
 			/* Place plane at tabletop barycenter and parallel to XZ */
 			plane = new Plane(Vector3.up, -(m_tabletop.height + m_tabletop.dimension.y * 0.5f));
 		}
@@ -174,7 +208,7 @@ namespace Zuru
 
 				if (m_isStretching)
 				{
-					/* Stretch tabletop and update its components (mesh, handles, etc.) when handle is dragged with left mouse button */
+					/* Stretch tabletop and update its elements (mesh, handles and legs) when handle is dragged with left mouse button */
 					var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 					float distance;
 
@@ -189,6 +223,7 @@ namespace Zuru
 						m_mesh.RecalculateNormals();
 
 						RepositionHandles();
+						RepositionLegs();
 					}
 				}
 				else
@@ -259,6 +294,26 @@ namespace Zuru
 			for (var i = 0; i < 4; ++i)
 			{
 				m_handles[i].transform.localPosition = new Vector3(m_meshVertices[i * 6].x, y, m_meshVertices[i * 6].z);
+			}
+		}
+
+
+		// Reposition legs taking in account their distance from corners (due to mesh change)
+		void RepositionLegs()
+		{
+			var t = new Vector3();
+
+			foreach (var i in new int[] { 0, 2 })
+			{
+				t[i] = (m_leg.distance[i] + m_leg.PF.GetComponentInChildren<Renderer>().bounds.extents[i]) / m_mesh.bounds.extents[i];
+			}
+
+			for (var i = 0; i < 4; ++i)
+			{
+				var x = Mathf.Lerp(m_meshVertices[i * 6].x, m_mesh.bounds.center.x, t.x);
+				var z = Mathf.Lerp(m_meshVertices[i * 6].z, m_mesh.bounds.center.z, t.z);
+
+				m_legs[i].transform.localPosition = new Vector3(x, m_tabletop.height, z);
 			}
 		}
 
