@@ -95,8 +95,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b8f9a5c997fe2742a6c6ead6572fddf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_initialDimension: {x: 4, y: 0.05, z: 2}
-  m_initialHeight: 1
-  m_minimumDimension: {x: 1, y: 0, z: 1}
-  m_stretchingHandlePF: {fileID: 1423509172250362, guid: cac469dbf5c8aca438a7276041975352,
-    type: 2}
+  m_tabletop:
+    dimension: {x: 4, y: 0.05, z: 2}
+    height: 1.2
+    stretchingHandlePF: {fileID: 1423509172250362, guid: cac469dbf5c8aca438a7276041975352,
+      type: 2}
+    minDimension: {x: 1, y: 0, z: 1}

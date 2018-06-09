@@ -5,38 +5,28 @@ using UnityEngine.Assertions;
 
 namespace Zuru
 {
-	public class Tabletop :
+	public class Table :
 		MonoBehaviour
 	{
-		// Tabletop top view
-		//   NW -------- NE
-		//    |          |
-		//    |          |
-		//   SW -------- SE
-		enum Corner
+		[Serializable]
+		struct Tabletop
 		{
-			Northwest,
-			Northeast,
-			Southeast,
-			Southwest
+			[Tooltip("Dimension")]
+			public Vector3 dimension;
+
+			[Tooltip("Height")]
+			public float height;
+
+			[Tooltip("Stretching handle PF")]
+			public GameObject stretchingHandlePF;
+
+			[Tooltip("Min dimension (y is ignored)")]
+			public Vector3 minDimension;
 		}
 
 
 		[SerializeField]
-		[Tooltip("Tabletop initial dimension (don't change it at runtime)")]
-		Vector3 m_initialDimension;
-
-		[SerializeField]
-		[Tooltip("Tabletop initial height (don't change it at runtime)")]
-		float m_initialHeight;
-
-		[SerializeField]
-		[Tooltip("Tabletop minimum dimension (y component is ignored)")]
-		Vector3 m_minimumDimension;
-
-		[SerializeField]
-		[Tooltip("Tabletop stretching handle PF")]
-		GameObject m_stretchingHandlePF;
+		Tabletop m_tabletop = new Tabletop();
 
 
 		// Currently active tabletop stretching handle
@@ -62,59 +52,64 @@ namespace Zuru
 		void Awake()
 		{
 			/* Check that serialized fields have sane values */
-			Assert.IsTrue(m_initialDimension.x > m_minimumDimension.x && m_initialDimension.y > 0.0f && m_initialDimension.z > m_minimumDimension.z);
-			Assert.IsTrue(m_initialHeight > 0.0f);
+			Assert.IsTrue(m_tabletop.dimension.x > m_tabletop.minDimension.x && m_tabletop.dimension.y > 0.0f &&
+					m_tabletop.dimension.z > m_tabletop.minDimension.z);
+
+			Assert.IsTrue(m_tabletop.height > 0.0f);
+			Assert.IsNotNull(m_tabletop.stretchingHandlePF);
 
 			foreach (var i in new int[] { 0, 2 })
 			{
-				Assert.IsTrue(m_minimumDimension[i] > 0.0f);
+				Assert.IsTrue(m_tabletop.minDimension[i] > 0.0f);
 			}
 
-			Assert.IsNotNull(m_stretchingHandlePF);
-
-			/* Create tabletop mesh */
+			/* Create tabletop mesh (top view)
+			 *   NW -------- NE
+			 *    |          |
+			 *    |          |
+			 *   SW -------- SE */
 			m_meshVertices = new Vector3[24];
 
 			// Northwest vertices
-			m_meshVertices[0].x = -m_initialDimension.x * 0.5f;
-			m_meshVertices[0].y = m_initialHeight;
-			m_meshVertices[0].z = m_initialDimension.z * 0.5f;
+			m_meshVertices[0].x = -m_tabletop.dimension.x * 0.5f;
+			m_meshVertices[0].y = m_tabletop.height;
+			m_meshVertices[0].z = m_tabletop.dimension.z * 0.5f;
 
 			m_meshVertices[3] = m_meshVertices[0];
-			m_meshVertices[3].y += m_initialDimension.y;
+			m_meshVertices[3].y += m_tabletop.dimension.y;
 
 			m_meshVertices[1] = m_meshVertices[2] = m_meshVertices[0];
 			m_meshVertices[4] = m_meshVertices[5] = m_meshVertices[3];
 
 			// Northeast vertices
-			m_meshVertices[6].x = m_initialDimension.x * 0.5f;
-			m_meshVertices[6].y = m_initialHeight;
-			m_meshVertices[6].z = m_initialDimension.z * 0.5f;
+			m_meshVertices[6].x = m_tabletop.dimension.x * 0.5f;
+			m_meshVertices[6].y = m_tabletop.height;
+			m_meshVertices[6].z = m_tabletop.dimension.z * 0.5f;
 
 			m_meshVertices[9] = m_meshVertices[6];
-			m_meshVertices[9].y += m_initialDimension.y;
+			m_meshVertices[9].y += m_tabletop.dimension.y;
 
 			m_meshVertices[7] = m_meshVertices[8] = m_meshVertices[6];
 			m_meshVertices[10] = m_meshVertices[11] = m_meshVertices[9];
 
 			// Southeast vertices
-			m_meshVertices[12].x = m_initialDimension.x * 0.5f;
-			m_meshVertices[12].y = m_initialHeight;
-			m_meshVertices[12].z = -m_initialDimension.z * 0.5f;
+			m_meshVertices[12].x = m_tabletop.dimension.x * 0.5f;
+			m_meshVertices[12].y = m_tabletop.height;
+			m_meshVertices[12].z = -m_tabletop.dimension.z * 0.5f;
 
 			m_meshVertices[15] = m_meshVertices[12];
-			m_meshVertices[15].y += m_initialDimension.y;
+			m_meshVertices[15].y += m_tabletop.dimension.y;
 
 			m_meshVertices[13] = m_meshVertices[14] = m_meshVertices[12];
 			m_meshVertices[16] = m_meshVertices[17] = m_meshVertices[15];
 
 			// Southwest vertices
-			m_meshVertices[18].x = -m_initialDimension.x * 0.5f;
-			m_meshVertices[18].y = m_initialHeight;
-			m_meshVertices[18].z = -m_initialDimension.z * 0.5f;
+			m_meshVertices[18].x = -m_tabletop.dimension.x * 0.5f;
+			m_meshVertices[18].y = m_tabletop.height;
+			m_meshVertices[18].z = -m_tabletop.dimension.z * 0.5f;
 
 			m_meshVertices[21] = m_meshVertices[18];
-			m_meshVertices[21].y += m_initialDimension.y;
+			m_meshVertices[21].y += m_tabletop.dimension.y;
 
 			m_meshVertices[19] = m_meshVertices[20] = m_meshVertices[18];
 			m_meshVertices[22] = m_meshVertices[23] = m_meshVertices[21];
@@ -160,14 +155,14 @@ namespace Zuru
 
 			for (var i = 0; i < 4; ++i)
 			{
-				m_handles[i] = Instantiate(m_stretchingHandlePF, transform);
-				m_handles[i].transform.localScale = Vector3.one * m_initialDimension.y * 2.0f;
+				m_handles[i] = Instantiate(m_tabletop.stretchingHandlePF, transform);
+				m_handles[i].transform.localScale = Vector3.one * m_tabletop.dimension.y * 2.0f;
 			}
 
 			RepositionHandles();
 
 			/* Place plane at tabletop barycenter and parallel to XZ */
-			plane = new Plane(Vector3.up, -(m_initialHeight + m_initialDimension.y * 0.5f));
+			plane = new Plane(Vector3.up, -(m_tabletop.height + m_tabletop.dimension.y * 0.5f));
 		}
 
 
@@ -259,7 +254,7 @@ namespace Zuru
 		// Reposition stretching handles at tabletop corners (due to mesh change)
 		void RepositionHandles()
 		{
-			var y = m_initialHeight + m_initialDimension.y * 0.5f;
+			var y = m_tabletop.height + m_tabletop.dimension.y * 0.5f;
 
 			for (var i = 0; i < 4; ++i)
 			{
@@ -290,9 +285,9 @@ namespace Zuru
 
 				var distance = Mathf.Abs(position[i] - cornerOpposite[i]);
 
-				if (distance < m_minimumDimension[i])
+				if (distance < m_tabletop.minDimension[i])
 				{
-					var t = distance / m_minimumDimension[i];
+					var t = distance / m_tabletop.minDimension[i];
 
 					position[i] = (position[i] - cornerOpposite[i] * (1.0f - t)) / t;
 				}
