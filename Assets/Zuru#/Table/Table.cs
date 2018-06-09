@@ -223,7 +223,7 @@ namespace Zuru
 		}
 
 
-		private void Update()
+		void Update()
 		{
 			if (m_mousePosition != Input.mousePosition)
 			{
@@ -370,7 +370,7 @@ namespace Zuru
 			var prev = ((index - 1) % 4 + 4) % 4;
 			var next = (index + 1) % 4;
 
-			for (var i = 0; i< 6; ++i)
+			for (var i = 0; i < 6; ++i)
 			{
 				if (index % 2 == 0)
 				{
