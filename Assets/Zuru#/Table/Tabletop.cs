@@ -31,6 +31,10 @@ namespace Zuru
 		float m_initialHeight;
 
 		[SerializeField]
+		[Tooltip("Tabletop minimum dimension (y component is ignored)")]
+		Vector3 m_minimumDimension;
+
+		[SerializeField]
 		[Tooltip("Tabletop stretching handle PF")]
 		GameObject m_stretchingHandlePF;
 
@@ -58,8 +62,14 @@ namespace Zuru
 		void Awake()
 		{
 			/* Check that serialized fields have sane values */
-			Assert.IsTrue(m_initialDimension.x > 0.0f && m_initialDimension.y > 0.0f && m_initialDimension.z > 0.0f);
+			Assert.IsTrue(m_initialDimension.x > m_minimumDimension.x && m_initialDimension.y > 0.0f && m_initialDimension.z > m_minimumDimension.z);
 			Assert.IsTrue(m_initialHeight > 0.0f);
+
+			foreach (var i in new int[] { 0, 2 })
+			{
+				Assert.IsTrue(m_minimumDimension[i] > 0.0f);
+			}
+
 			Assert.IsNotNull(m_stretchingHandlePF);
 
 			/* Create tabletop mesh */
@@ -175,15 +185,7 @@ namespace Zuru
 
 					if (plane.Raycast(ray, out distance))
 					{
-						var index = Array.IndexOf(m_handles, m_handleActive);
-						var position = transform.InverseTransformPoint(ray.GetPoint(distance));
-
-						for (var i = 0; i < 6; ++i)
-						{
-							m_meshVertices[index * 6 + i].x = position.x;
-							m_meshVertices[index * 6 + i].z = position.z;
-						}
-
+						StretchActiveCorner(transform.InverseTransformPoint(ray.GetPoint(distance)));
 						RepositionAdjacentCorners();
 
 						m_mesh.vertices = m_meshVertices;
@@ -228,7 +230,7 @@ namespace Zuru
 		}
 
 
-		// Reposition tabletop corners adjacent to currently active stretching handle (due to mesh change)
+		// Reposition tabletop corners adjacent to currently active one (due to mesh change)
 		void RepositionAdjacentCorners()
 		{
 			var index = Array.IndexOf(m_handles, m_handleActive);
@@ -260,6 +262,44 @@ namespace Zuru
 			for (var i = 0; i < 4; ++i)
 			{
 				m_handles[i].transform.localPosition = new Vector3(m_meshVertices[i * 6].x, y, m_meshVertices[i * 6].z);
+			}
+		}
+
+
+		// Stretch currently active corner taking in account tabletop minimum dimension
+		void StretchActiveCorner(Vector3 position)
+		{
+			var index = Array.IndexOf(m_handles, m_handleActive);
+
+			var corner = m_meshVertices[index * 6];
+			var cornerOpposite = m_meshVertices[(index + 2) % 4 * 6];
+
+			foreach (var i in new int[] { 0, 2 })
+			{
+				var isFlipped = position[i] > cornerOpposite[i] && cornerOpposite[i] > corner[i] ||
+						position[i] < cornerOpposite[i] && cornerOpposite[i] < corner[i];
+
+				if (isFlipped)
+				{
+					position[i] = corner[i];
+
+					continue;
+				}
+
+				var distance = Mathf.Abs(position[i] - cornerOpposite[i]);
+
+				if (distance < m_minimumDimension[i])
+				{
+					var t = distance / m_minimumDimension[i];
+
+					position[i] = (position[i] - cornerOpposite[i] * (1.0f - t)) / t;
+				}
+			}
+
+			for (var i = 0; i < 6; ++i)
+			{
+				m_meshVertices[index * 6 + i].x = position.x;
+				m_meshVertices[index * 6 + i].z = position.z;
 			}
 		}
 	}

@@ -97,5 +97,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_initialDimension: {x: 4, y: 0.05, z: 2}
   m_initialHeight: 1
+  m_minimumDimension: {x: 1, y: 0, z: 1}
   m_stretchingHandlePF: {fileID: 1423509172250362, guid: cac469dbf5c8aca438a7276041975352,
     type: 2}
