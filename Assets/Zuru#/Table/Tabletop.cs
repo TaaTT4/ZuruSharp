@@ -199,8 +199,10 @@ namespace Zuru
 				else
 				{
 					/* Show tabletop stretching handle when it's under mouse cursor or hide it otherwise */
+					var layerMask = 1 << LayerMask.NameToLayer("TabletopHandle");
+
 					RaycastHit hit;
-					Physics.Raycast(Camera.main.ScreenPointToRay(m_mousePosition), out hit, LayerMask.NameToLayer("TabletopHandle"));
+					Physics.Raycast(Camera.main.ScreenPointToRay(m_mousePosition), out hit, Camera.main.farClipPlane, layerMask);
 
 					if (hit.transform && !m_handleActive)
 					{
